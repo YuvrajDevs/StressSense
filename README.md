@@ -73,7 +73,7 @@ streamlit run dashboard.py
 
 ## 🧠 Model
 
-The stress classifier is trained on **Subject S15** from the [WESAD dataset](https://archive.ics.uci.edu/ml/datasets/WESAD) (Wearable Stress and Affect Detection). It uses ECG and BVP physiological signals, extracting statistical time-domain features to classify:
+The stress classifier is trained on **Subject S5** from the [WESAD dataset](https://archive.ics.uci.edu/ml/datasets/WESAD) (Wearable Stress and Affect Detection), using a 70/30 stratified train/test split. It uses ECG, BVP, EDA, Temperature, and Respiration signals, extracting 25 statistical time-domain features to classify:
 
 | Label | State |
 |-------|-------|
@@ -81,7 +81,7 @@ The stress classifier is trained on **Subject S15** from the [WESAD dataset](htt
 | 2 | Stress |
 | 3 | Meditation/Amusement |
 
-> **Note:** WESAD `.pkl` data files are not included in this repo due to size constraints (~800MB each). Download from the [official source](https://archive.ics.uci.edu/ml/datasets/WESAD).
+> **Note:** The pre-trained model files are already included — **you don't need the raw data to run the app.** If you want to retrain from scratch, you'll need `S5.pkl` (~993MB) from the [WESAD dataset](https://archive.ics.uci.edu/ml/datasets/WESAD). Place it in `saved_models/` and run `python model.py`.
 
 ---
 
