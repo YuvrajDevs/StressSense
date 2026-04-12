@@ -1,0 +1,50 @@
+# Environment & Secrets
+.env
+*.env
+
+# Python
+venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+.eggs/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# WESAD Raw Data - Large PKL files (all subjects - too large for GitHub ~800MB each)
+saved_models/S5.pkl
+saved_models/S10.pkl
+saved_models/S11.pkl
+saved_models/S15.pkl
+saved_models/S16.pkl
+saved_models/S17.pkl
+
+# Raw WESAD data in data/ folder (too large for git)
+data/*.pkl
+
+# Raw dataset CSV (large)
+stress_dataset.csv
+
+# Debug & temp files
+debug_30s_window.png
+debug_mismatch.py
+debug_model.py
+verify_parity.py
+loss_graph.png
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Streamlit cache
+.streamlit/secrets.toml
+
+# IDE
+.vscode/
+.idea/

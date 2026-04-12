@@ -1,0 +1,6 @@
+timestamp,eda,temp,resp,acc,model_prediction,confidence,activity,custom_note,user_label
+2026-03-30 22:18:56,4.2408,34.0788,-1.6861,0.9216,0,unknown,Gym,,0
+2026-03-30 22:18:57,4.2408,34.0788,-1.6861,0.9216,0,unknown,Gym,,1
+2026-03-30 22:19:07,4.2408,34.0788,-1.6861,0.9216,0,unknown,Gym,,0
+2026-03-30 22:19:20,4.2408,34.0788,-1.6861,0.9216,0,unknown,Walking,I feel good,0
+2026-03-30 22:21:27,9.0595,34.5603,2.8763,0.8981,0,unknown,Gym,,1

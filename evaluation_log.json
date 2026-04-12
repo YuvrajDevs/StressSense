@@ -1,0 +1,15 @@
+[
+    {
+        "timestamp": "2026-04-11T23:28:50.142611",
+        "subject": "S5",
+        "split": "70%/30%",
+        "threshold_used": 0.15,
+        "metrics": {
+            "Accuracy": 1.0,
+            "Precision": 1.0,
+            "Recall": 1.0,
+            "F1 Score": 1.0,
+            "Score": 1.0
+        }
+    }
+]

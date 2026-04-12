@@ -1,0 +1,13 @@
+streamlit==1.55.0
+pandas==2.3.3
+numpy==2.4.3
+scikit-learn==1.8.0
+scipy==1.17.1
+matplotlib==3.10.8
+plotly==6.6.0
+seaborn==0.13.2
+google-generativeai==0.8.6
+python-dotenv==1.2.2
+joblib==1.5.3
+Pillow==12.1.1
+altair==6.0.0
