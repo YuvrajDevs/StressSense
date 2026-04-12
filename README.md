@@ -113,4 +113,3 @@ MIT License — feel free to use, modify, and distribute.
 
 ---
 
-*Built by [Yuvraj](https://github.com/YuvrajDevs)*
