@@ -16,11 +16,12 @@ import json
 import csv
 import plotly.express as px
 
-API_URL  = "http://127.0.0.1:8000/predict"
+API_URL       = "http://127.0.0.1:8000/predict"
 INTERPRET_URL = "http://127.0.0.1:8000/interpret"
-DATA_PATH = "live_training_data.csv"
-ACC_PATH  = "accuracy.csv"
-S5_PATH   = "saved_models/S5.pkl"
+DATA_PATH     = "live_training_data.csv"
+ACC_PATH      = "accuracy.csv"
+# Test-split CSV (30% of S5 held out during training — genuinely unseen data)
+DEMO_CSV_PATH = "data/s5_test_demo.csv"
 
 st.set_page_config(page_title="StressTrack Dashboard", layout="wide")
 st.title("📊 Real-Time Stress Prediction Dashboard")
@@ -122,25 +123,37 @@ def fetch_interpretation(activity: str, feeling: str, query: str = None, history
         return f"API Error: {e}", "low"
 
 
-# ── Load S5 Dataset ────────────────────────────────────────────────────────────
+# ── Load Test-Split Demo Data ─────────────────────────────────────────────────
 @st.cache_data
-def load_s5_data(filepath=S5_PATH, step=700) -> pd.DataFrame:
-    try:
-        if not os.path.exists(filepath):
-            st.warning(f"S5.pkl not found at {filepath}")
-            return pd.DataFrame()
-            
-        import pickle
-        with open(filepath, "rb") as f:
-            d = pickle.load(f, encoding="latin1")
-            
-        from preprocessing import preprocess_signals
-        df = preprocess_signals(d, step=step)
-        
-        return df
-    except Exception as e:
-        st.error(f"Error loading S5 data: {e}")
-        return pd.DataFrame()
+def load_s5_data(filepath=DEMO_CSV_PATH, step=700) -> pd.DataFrame:
+    """
+    Loads the 30% held-out test split of S5 (data the model was never trained on).
+    Falls back to the full S5.pkl if the CSV is missing (requires WESAD download).
+    """
+    # ── Primary: lightweight test-split CSV (committed to repo) ───────────────
+    if os.path.exists(DEMO_CSV_PATH):
+        try:
+            df = pd.read_csv(DEMO_CSV_PATH)
+            required = {"eda", "temp", "resp", "acc", "ecg", "label"}
+            if required.issubset(df.columns):
+                return df.reset_index(drop=True)
+        except Exception as e:
+            st.warning(f"Could not load demo CSV: {e}")
+
+    # ── Fallback: full S5.pkl (if user has WESAD data locally) ────────────────
+    s5_pkl = "saved_models/S5.pkl"
+    if os.path.exists(s5_pkl):
+        try:
+            import pickle
+            with open(s5_pkl, "rb") as f:
+                d = pickle.load(f, encoding="latin1")
+            from preprocessing import preprocess_signals
+            return preprocess_signals(d, step=step)
+        except Exception as e:
+            st.error(f"Error loading S5.pkl: {e}")
+
+    st.error("No data source found. Expected: data/s5_test_demo.csv")
+    return pd.DataFrame()
 
 
 # ── Process Sample ────────────────────────────────────────────────────────────
@@ -608,10 +621,11 @@ with main_col:
         actual_label = int(current_sample["label"])
         
         data = {
-            "eda": round(current_sample["eda"], 4),
-            "temp": round(current_sample["temp"], 4),
-            "resp": round(current_sample["resp"], 4),
-            "acc": round(current_sample["acc"], 4),
+            "eda":   round(current_sample["eda"],  4),
+            "temp":  round(current_sample["temp"], 4),
+            "resp":  round(current_sample["resp"], 4),
+            "acc":   round(current_sample["acc"],  4),
+            "ecg":   round(float(current_sample.get("ecg", 0.0)), 4),
             "label": int(actual_label),
         }
         

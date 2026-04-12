@@ -37,6 +37,7 @@ debug_mismatch.py
 debug_model.py
 verify_parity.py
 loss_graph.png
+extract_test_split.py
 
 # macOS
 .DS_Store

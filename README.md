@@ -73,15 +73,19 @@ streamlit run dashboard.py
 
 ## 🧠 Model
 
-The stress classifier is trained on **Subject S5** from the [WESAD dataset](https://archive.ics.uci.edu/ml/datasets/WESAD) (Wearable Stress and Affect Detection), using a 70/30 stratified train/test split. It uses ECG, BVP, EDA, Temperature, and Respiration signals, extracting 25 statistical time-domain features to classify:
+The stress classifier is trained on **70% of Subject S5** from the [WESAD dataset](https://archive.ics.uci.edu/ml/datasets/WESAD) (Wearable Stress and Affect Detection), using a stratified train/test split (`random_state=42`). It uses ECG, BVP, EDA, Temperature, and Respiration signals, extracting 25 statistical time-domain features to classify:
 
 | Label | State |
 |-------|-------|
-| 1 | Baseline |
+| 1 | Baseline (Non-Stress) |
 | 2 | Stress |
-| 3 | Meditation/Amusement |
+| 3 | Meditation/Amusement (Non-Stress) |
 
-> **Note:** The pre-trained model files are already included — **you don't need the raw data to run the app.** If you want to retrain from scratch, you'll need `S5.pkl` (~993MB) from the [WESAD dataset](https://archive.ics.uci.edu/ml/datasets/WESAD). Place it in `saved_models/` and run `python model.py`.
+### Dashboard Demo Data
+
+The dashboard plays back **`data/s5_test_demo.csv`** — the exact **30% held-out test split** of S5 that the model was **never trained on**. This means every prediction you see in the dashboard is genuine inference on unseen data (666 samples, ~29% stress ratio).
+
+> **To retrain from scratch:** Download `S5.pkl` (~993MB) from the [WESAD dataset](https://archive.ics.uci.edu/ml/datasets/WESAD), place it in `saved_models/`, and run `python model.py`.
 
 ---
 
