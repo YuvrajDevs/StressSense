@@ -6,6 +6,9 @@ displays predictions, summary statistics, trend charts, model agreement,
 and a dataset exploration hook for future extension.
 """
 
+import warnings
+warnings.filterwarnings("ignore")
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -101,6 +104,7 @@ def fetch_interpretation(activity: str, feeling: str, query: str = None, history
         "temp": st.session_state.latest_data["temp"],
         "resp": st.session_state.latest_data["resp"],
         "acc": st.session_state.latest_data["acc"],
+        "ecg": st.session_state.latest_data["ecg"],
         "prediction": st.session_state.get("latest_prediction", 0),
         "user_context": {
             "activity": activity,
@@ -238,20 +242,20 @@ def process_current_sample(data: dict, actual_label: int, testing_mode: bool) ->
                 elif acc_std > 0.05 and abs(data["acc"] - acc_mean) > 2.5 * acc_std:
                     is_anomaly = True
             
-            # Hybrid Priority Sequence
-            if testing_mode and ensemble_pred != actual_label:
+            # Calculate standard binary prediction (0.5 threshold) for mismatch check
+            ensemble_binary = 1 if ensemble_prob > 0.5 else 0
+            
+            if testing_mode and ensemble_binary != actual_label:
                 trigger_reason = "mismatch"
-            elif rf_pred != lr_pred:
-                trigger_reason = "disagreement"
-            elif 0.4 <= ensemble_prob <= 0.6:
+            elif not testing_mode and 0.4 <= ensemble_prob <= 0.6:
                 trigger_reason = "low_confidence"
-            elif is_anomaly:
+            elif is_anomaly and (not testing_mode or ensemble_pred != actual_label):
                 trigger_reason = "anomaly"
                 
             if trigger_reason and st.session_state.current_index != st.session_state.last_triggered_index:
                 st.session_state.last_triggered_index = st.session_state.current_index
                 st.session_state.autoplay = False 
-                context_popup_modal(ensemble_pred, ensemble_prob, rf_pred, lr_pred, trigger_reason, actual_label if testing_mode else None)
+                context_popup_modal(ensemble_pred, ensemble_prob, trigger_reason, actual_label if testing_mode else None)
                 
         else:
             st.error(f"❌ Error {response.status_code}: {response.text}")
@@ -263,22 +267,19 @@ def process_current_sample(data: dict, actual_label: int, testing_mode: bool) ->
 
 # ── Popup Modal ────────────────────────────────────────────────────────────────
 @st.dialog("Model Feedback Request")
-def context_popup_modal(pred_val, ensemble_prob, rf_pred, lr_pred, trigger, actual_val):
+def context_popup_modal(pred_val, ensemble_prob, trigger, actual_val):
     titles = {
         "mismatch": "⚠️ Mismatch Detected",
-        "disagreement": "⚠️ Model Disagreement",
         "low_confidence": "⚠️ Uncertain Prediction",
         "anomaly": "⚠️ Unusual Signal Detected"
     }
     msgs = {
-         "mismatch": "Prediction does not match actual label.",
-         "disagreement": "Different models predict different outcomes.",
-         "low_confidence": "Model is unsure about this prediction.",
-         "anomaly": "Sudden signal change detected."
+         "mismatch": "The ensemble prediction does not match the actual label.",
+         "low_confidence": "The model is unsure about this prediction.",
+         "anomaly": "A sudden change in your physiological signals was detected."
     }
     colors = {
         "mismatch": "#ef4444",
-        "disagreement": "#f97316",
         "low_confidence": "#eab308",
         "anomaly": "#3b82f6"
     }
@@ -290,10 +291,9 @@ def context_popup_modal(pred_val, ensemble_prob, rf_pred, lr_pred, trigger, actu
     with st.expander("🛠️ Debug Panel", expanded=False):
         if actual_val is not None:
             st.write(f"- **Actual Label:** {actual_val}")
-        st.write(f"- **RF Prediction:** {rf_pred}")
-        st.write(f"- **LR Prediction:** {lr_pred}")
+        st.write(f"- **Ensemble Prediction:** {pred_val}")
         st.write(f"- **Ensemble Probability:** {ensemble_prob:.3f}")
-        st.write(f"- **Trigger:** {trigger}")
+        st.write(f"- **Trigger Reason:** {trigger}")
         
     st.write("Please confirm your state:")
     
@@ -688,3 +688,75 @@ if st.session_state.autoplay:
     else:
         st.session_state.autoplay = False
         st.rerun()
+
+
+# ── Dataset Balance Panel ──────────────────────────────────────────────────────
+def show_dataset_balance():
+    st.markdown("### ⚖️ Dataset Balance Check")
+    
+    cfg = {}
+    try:
+        with open("saved_models/config.json", "r") as f:
+            cfg = json.load(f)
+    except Exception:
+        st.warning("config.json not found — run model.py to generate it.")
+        return
+
+    required = {"train_total", "train_stress", "train_normal", "test_total", "test_stress", "test_normal"}
+    if not required.issubset(cfg.keys()):
+        st.warning("Distribution stats missing from config.json — retrain the model to populate them.")
+        return
+
+    def balance_bar(stress, normal, total, label):
+        stress_pct = stress / total * 100
+        normal_pct = normal / total * 100
+        bias_warn = stress_pct < 20 or normal_pct < 20
+        badge = "🔴 Heavily Imbalanced" if bias_warn else ("🟡 Moderate Imbalance" if min(stress_pct, normal_pct) < 35 else "🟢 Balanced")
+        st.markdown(
+            f"**{label}** — {total:,} samples &nbsp;&nbsp; {badge}"
+        )
+        st.markdown(
+            f"""
+            <div style='display:flex; border-radius:6px; overflow:hidden; height:22px; margin-bottom:4px;'>
+                <div style='width:{stress_pct:.1f}%; background:#ef4444; display:flex; align-items:center; justify-content:center;'>
+                    <span style='color:white; font-size:0.75em; font-weight:bold;'>😣 {stress_pct:.0f}%</span>
+                </div>
+                <div style='width:{normal_pct:.1f}%; background:#10b981; display:flex; align-items:center; justify-content:center;'>
+                    <span style='color:white; font-size:0.75em; font-weight:bold;'>😌 {normal_pct:.0f}%</span>
+                </div>
+            </div>
+            <div style='display:flex; justify-content:space-between; color:#94a3b8; font-size:0.82em; margin-bottom:12px;'>
+                <span>😣 Stressed: {stress:,}</span>
+                <span>😌 Normal: {normal:,}</span>
+            </div>
+            """,
+            unsafe_allow_html=True
+        )
+
+    col1, col2 = st.columns(2)
+    with col1:
+        with st.container(border=True):
+            balance_bar(
+                cfg["train_stress"], cfg["train_normal"], cfg["train_total"],
+                "🏋️ Training Set (70%)"
+            )
+    with col2:
+        with st.container(border=True):
+            balance_bar(
+                cfg["test_stress"], cfg["test_normal"], cfg["test_total"],
+                "🧪 Test Set (30%)"
+            )
+
+    if cfg["train_stress"] < cfg["train_normal"] * 0.5:
+        st.warning(
+            "⚠️ **Stress samples are less than half the normal samples.** "
+            "Models use `class_weight='balanced'` to compensate, but be cautious about recall."
+        )
+    else:
+        st.info("ℹ️ Both splits use the same stratified ratio (stratify=label), so train and test distributions should mirror each other.")
+
+
+with main_col:
+    with st.expander("⚖️ Dataset Balance", expanded=False):
+        show_dataset_balance()
+

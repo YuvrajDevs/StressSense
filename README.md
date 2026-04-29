@@ -65,6 +65,14 @@ GEMINI_API_KEY="your_api_key_here"
 Get your key at [Google AI Studio](https://aistudio.google.com/app/apikey).
 
 ### 5. Run the app
+You will need two terminal windows to run the backend and frontend separately.
+
+**Terminal 1 (Backend API):**
+```bash
+uvicorn backend:app --reload
+```
+
+**Terminal 2 (Streamlit Dashboard):**
 ```bash
 streamlit run dashboard.py
 ```

@@ -245,10 +245,22 @@ def train_and_evaluate(train_df: pd.DataFrame, test_df: pd.DataFrame):
 
     print(f"\n  ⭐ AUTO-SELECTED BEST_THRESHOLD = {BEST_THRESHOLD}  (Score: {best_score:.4f})")
 
-    # Persist threshold
+    # Persist threshold + class distribution
     config_path = os.path.join(MODEL_DIR, "config.json")
+    train_stress   = int((y_train == 1).sum())
+    train_normal   = int((y_train == 0).sum())
+    test_stress    = int((y_test  == 1).sum())
+    test_normal    = int((y_test  == 0).sum())
     with open(config_path, "w") as f:
-        json.dump({"BEST_THRESHOLD": BEST_THRESHOLD}, f, indent=2)
+        json.dump({
+            "BEST_THRESHOLD": BEST_THRESHOLD,
+            "train_total":    train_stress + train_normal,
+            "train_stress":   train_stress,
+            "train_normal":   train_normal,
+            "test_total":     test_stress + test_normal,
+            "test_stress":    test_stress,
+            "test_normal":    test_normal,
+        }, f, indent=2)
 
     # ── Confusion matrix at best threshold ────────────────────────────────────
     print("\n  ════════════════════════════════════════")
